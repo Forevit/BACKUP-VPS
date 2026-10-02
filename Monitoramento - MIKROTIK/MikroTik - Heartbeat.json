@@ -1,0 +1,176 @@
+{
+  "name": "MikroTik - Heartbeat",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mikrotik-heartbeat",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "30187eab-0f14-4d13-a8d0-fd9265be818a",
+      "name": "Webhook",
+      "webhookId": "184a2506-ea33-4e20-aa1b-8033ed01bd2c"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "TGRpgXCAY9poFSwv",
+          "mode": "list",
+          "cachedResultName": "monitor_internet",
+          "cachedResultUrl": "/projects/fNt3FpEkWFYlHIZP/datatables/TGRpgXCAY9poFSwv"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyValue": "1"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "alertSent": false,
+            "wasOffline": false,
+            "lastHeartbeat": "={{ $now }}",
+            "status": "UP"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "failures",
+              "displayName": "failures",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "lastHeartbeat",
+              "displayName": "lastHeartbeat",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "alertSent",
+              "displayName": "alertSent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "wasOffline",
+              "displayName": "wasOffline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "outageStartedAt",
+              "displayName": "outageStartedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "b048f360-2197-4927-b296-6ae9238098b7",
+      "name": "Update row(s)"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.eduardoferreira.space",
+            "user-agent": "RouterOS 7.23.2",
+            "content-length": "44",
+            "accept-encoding": "deflate, gzip",
+            "content-type": "application/json",
+            "via": "1.1 Caddy",
+            "x-forwarded-for": "143.255.182.183",
+            "x-forwarded-host": "n8n.eduardoferreira.space",
+            "x-forwarded-proto": "https"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "router": "hEX",
+            "interface": "pppoe-opennet"
+          },
+          "webhookUrl": "https://n8n.eduardoferreira.space/webhook/mikrotik-heartbeat",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Update row(s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a6b4f5c6-acdc-433e-a9b3-e4ba1d00e2ac",
+  "meta": {
+    "instanceId": "199c2f5c785f6bdc2f491f0187c4e39fe20d1c64cc4287da887da80b3a140b3f"
+  },
+  "nodeGroups": [],
+  "id": "61SQE2JyxWheMbkt",
+  "tags": []
+}

@@ -1,0 +1,600 @@
+{
+  "name": "MikroTik - Monitoramento",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 20
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        32,
+        -64
+      ],
+      "id": "5759e650-4ba7-4672-becc-e28b7822cdb7",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "TGRpgXCAY9poFSwv",
+          "mode": "list",
+          "cachedResultName": "monitor_internet",
+          "cachedResultUrl": "/projects/fNt3FpEkWFYlHIZP/datatables/TGRpgXCAY9poFSwv"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyValue": "1"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        256,
+        -64
+      ],
+      "id": "1ddc320f-172b-487b-afe7-b17da1ad579c",
+      "name": "Get row(s)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\nconst agora = new Date();\nconst ultimoHeartbeat = new Date(data.lastHeartbeat);\n\nconst diferencaMs = agora.getTime() - ultimoHeartbeat.getTime();\nconst segundosSemHeartbeat = Math.floor(diferencaMs / 1000);\n\n// Considera offline após 90 segundos sem heartbeat\nconst offline = segundosSemHeartbeat > 90;\n\nreturn [\n  {\n    json: {\n      ...data,\n      offline,\n      segundosSemHeartbeat\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        -64
+      ],
+      "id": "3df8f750-3c8b-4db8-bc12-2129005b6067",
+      "name": "Verificar Heartbeat"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cf944fd8-983f-485e-ac6b-c49e36a318fd",
+              "leftValue": "={{ $json.offline }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        752,
+        -64
+      ],
+      "id": "c0797c88-3524-44ec-81c9-75f1e7a730fd",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5d2165ca-5c5b-4542-8408-835dac3c4cd3",
+              "leftValue": "={{ $json.alertSent }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1072,
+        -288
+      ],
+      "id": "2135eeed-4367-40ac-b001-e1a004706102",
+      "name": "Alerta ainda não enviado?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\nconst agora = new Date();\nconst ultimoHeartbeat = new Date(data.lastHeartbeat);\n\nconst segundosSemHeartbeat = Math.floor(\n  (agora.getTime() - ultimoHeartbeat.getTime()) / 1000\n);\n\nconst minutos = Math.floor(segundosSemHeartbeat / 60);\nconst segundos = segundosSemHeartbeat % 60;\n\nlet tempoSemHeartbeat;\n\nif (minutos > 0) {\n  tempoSemHeartbeat = `${minutos}min ${segundos}s`;\n} else {\n  tempoSemHeartbeat = `${segundos}s`;\n}\n\nconst horario = agora.toLocaleString('pt-BR', {\n  timeZone: 'America/Fortaleza'\n});\n\nconst ultimo = ultimoHeartbeat.toLocaleString('pt-BR', {\n  timeZone: 'America/Fortaleza'\n});\n\nconst mensagem =\n`🚨 *ALERTA DE INTERNET*\n\n🔴 *LINK OFFLINE*\n\n🔌 *Interface:* \\`pppoe-opennet\\`\n🖥️ *Router:* \\`hEX\\`\n\n❌ O MikroTik parou de enviar o heartbeat.\n\n🕐 *Último heartbeat:* ${ultimo}\n🕐 *Verificação:* ${horario}\n\n⏱️ *Sem comunicação:* ${tempoSemHeartbeat}\n\n⚠️ Verifique o link PPPoE.`;\n\nreturn [\n  {\n    json: {\n      ...data,\n      mensagem\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        -304
+      ],
+      "id": "336528ea-8561-4756-84c3-a3f466b73c3c",
+      "name": "Montar Alerta de Queda"
+    },
+    {
+      "parameters": {
+        "chatId": "1588203127",
+        "text": "={{ $json.mensagem }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1584,
+        -304
+      ],
+      "id": "1882d6a3-da37-4fe1-a962-3b70921353e1",
+      "name": "Send a text message",
+      "webhookId": "da65ee41-e7ef-4762-a54b-88796568547c",
+      "credentials": {
+        "telegramApi": {
+          "id": "bvd3C7OKwX0hwk5A",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "TGRpgXCAY9poFSwv",
+          "mode": "list",
+          "cachedResultName": "monitor_internet",
+          "cachedResultUrl": "/projects/fNt3FpEkWFYlHIZP/datatables/TGRpgXCAY9poFSwv"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyValue": "1"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "alertSent": true,
+            "wasOffline": true,
+            "status": "DOWN",
+            "outageStartedAt": "={{ $now }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "failures",
+              "displayName": "failures",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "lastHeartbeat",
+              "displayName": "lastHeartbeat",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "alertSent",
+              "displayName": "alertSent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "wasOffline",
+              "displayName": "wasOffline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "outageStartedAt",
+              "displayName": "outageStartedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1856,
+        -304
+      ],
+      "id": "90cf6252-0613-4695-b756-cdcae7537f09",
+      "name": "Update row(s)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a14195a7-7f4a-4f75-aee1-59ac96518c47",
+              "leftValue": "={{ $json.wasOffline }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1216,
+        -96
+      ],
+      "id": "d6532a98-e6f1-4c24-8591-dc42aabfc742",
+      "name": "WasOffline?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\nconst agora = new Date();\nconst inicioQueda = new Date(data.outageStartedAt);\n\n// Evita NaN caso o timestamp esteja inválido\nconst inicioValido = !Number.isNaN(inicioQueda.getTime());\n\nconst inicio = inicioValido\n  ? inicioQueda\n  : new Date(data.lastHeartbeat);\n\nconst tempoOfflineMs = Math.max(\n  0,\n  agora.getTime() - inicio.getTime()\n);\n\nconst totalSegundos = Math.floor(tempoOfflineMs / 1000);\n\nconst horas = Math.floor(totalSegundos / 3600);\nconst minutos = Math.floor((totalSegundos % 3600) / 60);\nconst segundos = totalSegundos % 60;\n\nlet tempoOffline;\n\nif (horas > 0) {\n  tempoOffline = `${horas}h ${minutos}min ${segundos}s`;\n} else if (minutos > 0) {\n  tempoOffline = `${minutos}min ${segundos}s`;\n} else {\n  tempoOffline = `${segundos}s`;\n}\n\nconst inicioFormatado = inicio.toLocaleString('pt-BR', {\n  timeZone: 'America/Fortaleza'\n});\n\nconst restabelecimento = agora.toLocaleString('pt-BR', {\n  timeZone: 'America/Fortaleza'\n});\n\nconst mensagem =\n`🟢 *INTERNET RESTABELECIDA*\n\n🔌 *Interface:* \\`pppoe-opennet\\`\n🖥️ *Router:* \\`hEX\\`\n\n🕐 *Início da queda:* ${inicioFormatado}\n🕐 *Restabelecimento:* ${restabelecimento}\n\n⏱️ *Tempo offline:* ${tempoOffline}\n\n✅ O link voltou a responder normalmente.`;\n\nreturn [\n  {\n    json: {\n      ...data,\n      mensagem,\n      tempoOffline\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1584,
+        -32
+      ],
+      "id": "af3b4b49-eab5-4931-8986-704c89325428",
+      "name": "Montar Recuperação"
+    },
+    {
+      "parameters": {
+        "chatId": "1588203127",
+        "text": "={{ $json.mensagem }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1808,
+        -32
+      ],
+      "id": "77f3d00e-132f-403e-93e0-860e277d41d8",
+      "name": "Send a text message1",
+      "webhookId": "2573e4f8-8d49-4c80-8722-ac3693c24ae5",
+      "credentials": {
+        "telegramApi": {
+          "id": "bvd3C7OKwX0hwk5A",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "TGRpgXCAY9poFSwv",
+          "mode": "list",
+          "cachedResultName": "monitor_internet",
+          "cachedResultUrl": "/projects/fNt3FpEkWFYlHIZP/datatables/TGRpgXCAY9poFSwv"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyValue": "1"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "alertSent": false,
+            "wasOffline": false,
+            "status": "UP",
+            "outageStartedAt": "="
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "failures",
+              "displayName": "failures",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "lastHeartbeat",
+              "displayName": "lastHeartbeat",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "alertSent",
+              "displayName": "alertSent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "wasOffline",
+              "displayName": "wasOffline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "outageStartedAt",
+              "displayName": "outageStartedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2048,
+        -32
+      ],
+      "id": "7932b90e-223f-4028-ae77-fedcd41c0e58",
+      "name": "Update row(s)1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1216,
+        176
+      ],
+      "id": "fb73d565-c4d2-4e7f-8f5b-c275e1a9d31f",
+      "name": "No Operation, do nothing"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s)": {
+      "main": [
+        [
+          {
+            "node": "Verificar Heartbeat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar Heartbeat": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Alerta ainda não enviado?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alerta ainda não enviado?": {
+      "main": [
+        [
+          {
+            "node": "Montar Alerta de Queda",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WasOffline?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar Alerta de Queda": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Update row(s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WasOffline?": {
+      "main": [
+        [
+          {
+            "node": "Montar Recuperação",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar Recuperação": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message1": {
+      "main": [
+        [
+          {
+            "node": "Update row(s)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "88d1b184-7115-4fee-adad-b3567a4f4f7c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "199c2f5c785f6bdc2f491f0187c4e39fe20d1c64cc4287da887da80b3a140b3f"
+  },
+  "nodeGroups": [],
+  "id": "uU8UwLg5DXXpW6wD",
+  "tags": []
+}
